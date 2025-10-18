@@ -11,15 +11,25 @@ precision mediump float;
 attribute vec4 vPosition;
 attribute vec4 vColor;
 
+
+uniform bool isCube;
+
+uniform mat4 vMatrix;
 uniform mat4 vXMatrix;
 uniform mat4 vYMatrix;
 uniform mat4 vZMatrix;
+
 varying vec4 fColor;
 
 void main() {
     gl_PointSize = 4.0;
     fColor = vColor;
-    gl_Position = (vXMatrix * vYMatrix * vZMatrix) * vPosition; 
+    if(isCube){
+        gl_Position = (vMatrix * vXMatrix * vYMatrix * vZMatrix) * vPosition; 
+    }else {
+        gl_Position = vMatrix * vPosition;
+    }
+    
 }
 </script>
 
@@ -52,10 +62,18 @@ void main() {
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
-<div id="fpsDisplay">
-    <button id="angleX">Rotate X</button>
-    <button id="angleY">Rotate Y</button>
-    <button id="angleZ">Rotate Z</button>
+<div >
+    
+    <button id="angleX" style="color: red; background-color: burlywood;">Rotate X</button>
+    <button id="angleY" style="color: lawngreen; background-color: burlywood;">Rotate Y</button>
+    <button id="angleZ" style="color: blue; background-color: burlywood;">Rotate Z</button>
+    
+    
+</div>
+<div>
+    <p>Adjust Rotation Speed:</p>
+    <input type="range" min=".1" max=".5" class="slider" id="rotSpeed" value=".1" step=".025"></input>
+    <p id="value-box" style="color: blueviolet;"> Theta: </p>
 </div>
 
 </body>

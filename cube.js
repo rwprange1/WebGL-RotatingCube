@@ -20,11 +20,16 @@ var worldToNDC;
 const BYTES_IN_VERTEX = 16; // 4 floats with 4 bytes each
 const BYTES_IN_COLOR = 16;
 const VERTICES_IN_CUBE = 36; // 6 sides 6 vertices
+const VERTICES_IN_LINES = 6;
+
+const BYTES_IN_CUBE =  (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE;
+const BYTES_IN_LINE =  (BYTES_IN_VERTEX +  BYTES_IN_COLOR) * VERTICES_IN_LINES;
+
+const LINE_COL_START = BYTES_IN_CUBE + VERTICES_IN_LINES * BYTES_IN_VERTEX;
+
+const TOTAL_BYTES = (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE + BYTES_IN_LINE; 
 
 
-const TOTAL_BYTES = (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE; 
-
-const BYTES_IN_CUBE = BYTES_IN_VERTEX * VERTICES_IN_CUBE;
 
 
 
@@ -47,9 +52,20 @@ var vXMatrix;
 var vYMatrix;
 var vZMatrix;
 
+var theta = .1;
+
 window.onload = function init(){
     canvas = document.getElementById("gl-canvas");
 
+    let valueHolder = this.document.getElementById("value-box");
+    valueHolder.innerHTML = ("Theta: " + theta);
+    let slider = this.document.getElementById("rotSpeed");
+    
+    slider.addEventListener("input", ()=> {
+        //console.log(slider.value)
+        theta = Number(slider.value);
+        valueHolder.innerHTML = ("Theta: " + theta);
+    })
 
 
     let xButton = document.getElementById("angleX");
@@ -97,31 +113,68 @@ window.onload = function init(){
     vYMatrix = gl.getUniformLocation(program, "vYMatrix");
     vZMatrix = gl.getUniformLocation(program, "vZMatrix");
     
+    
+    let vMatrix = gl.getUniformLocation(program, "vMatrix");
+
+    let matY = rotate4x4(-.6, "y");
+    let matX = rotate4x4(.5, "x");
+
+    let mat = matMult(matX, matY);
+
+    rotationMat = new Float32Array(16);
+    for (let c = 0; c < 4; c++) { 
+        for (let r = 0; r < 4; r++) {  
+            rotationMat[c * 4 + r] = mat[r][c];
+        }
+    }
+
+     gl.uniformMatrix4fv(vMatrix, false, rotationMat);
+
     buildCube();
+    buildAxis();
+
     bindCube();
     render();
 }
 
+function buildAxis(){
 
-function radToDeg(r) {
-    return r * 180 / Math.PI;
-  }
+    let points = [
+        0.0, 0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0, 1.0,
 
+        0.0, 0.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 1.0,
 
+        0.0, 0.0, 0.0, 1.0,
+        0.0, 0.0, 1.0, 1.0,
+
+        1.0, 0.0, 0.0 , 1.0,
+        1.0, 0.0, 0.0 , 1.0,
+
+        0.0, 1.0, 0.0 , 1.0,
+        0.0, 1.0, 0.0 , 1.0,
+        0.0, 0.0, 1.0 , 1.0,
+        0.0, 0.0, 1.0 , 1.0,
+    ];
+
+    gl.bufferSubData(gl.ARRAY_BUFFER, TOTAL_BYTES - BYTES_IN_LINE, new Float32Array(points));
+}
 
 /**
  * This function will define our volcano and add it to the databuffer
  */
 function buildCube(){
     gl.bindBuffer(gl.ARRAY_BUFFER, dataBuffer);
+    
     let colors = [
-         [ 1.0, 0.0, 0.0, 1.0],
-         [0.0, 1.0, 0.0, 1.0],
+        [ 1.0, 0.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0],
         [0.0, 0.0, 1.0, 1.0],
         [.5, .5, 0.0, 1.0],
         [0.0, .5, .5, 1.0],
-       [.5, 0.0, .5, 1.0]
-    ]
+        [.5, 0.0, .5, 1.0]
+    ];
 
     let zMax = .5;
     let xMax = .5;
@@ -186,51 +239,58 @@ function buildCube(){
         0.0, 0.0, zMax, 1.0,
         xMax, 0.0, zMax, 1.0,
     ];
-    
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(cube));
 
-    let data =[];
+    let mat = mat4();
+    rotationMat = new Float32Array(16);
+    for (let c = 0; c < 4; c++) { 
+        for (let r = 0; r < 4; r++) {  
+            rotationMat[c * 4 + r] = mat[r][c];
+        }
+    }
+
+    gl.uniformMatrix4fv(vXMatrix, false, rotationMat);
+    gl.uniformMatrix4fv(vYMatrix, false, rotationMat);
+    gl.uniformMatrix4fv(vZMatrix, false, rotationMat);
+
     for (let i = 0; i < 6; i++){
         for( let j = 0; j < 6; j++){
-            data.push(...colors[i])
+            cube.push(...colors[i])
         }
     }
    
-    let ar = new Float32Array(data);
-    console.log(ar);
-
-    gl.bufferSubData(gl.ARRAY_BUFFER, BYTES_IN_CUBE , new Float32Array(data));
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(cube));
 }
 
 /**
- * Aligns the pointers in the databuffer to allow us to display the volcano's base
+ * Aligns the pointers in the databuffer to allow us to display the cube
  */
 function bindCube(){
-    gl.useProgram(program);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, dataBuffer);
 
     let vColor = gl.getAttribLocation(program, "vColor");
-    gl.vertexAttribPointer(vColor, 4,gl.FLOAT, false, 0, BYTES_IN_CUBE);
+    gl.vertexAttribPointer(vColor, 4,gl.FLOAT, false, 0, BYTES_IN_VERTEX * VERTICES_IN_CUBE);
     gl.enableVertexAttribArray(vColor);
 
     let vPosition = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
 
+    
 
-    let mat = mat4();
-    rotationMat = new Float32Array(16);
-        for (let c = 0; c < 4; c++) { 
-            for (let r = 0; r < 4; r++) {  
-                rotationMat[c * 4 + r] = mat[r][c];
-            }
-        }
+    let isCube = gl.getUniformLocation(program, "isCube");
+    gl.uniform1i(isCube, 1);
+}
 
-        
-    gl.uniformMatrix4fv(vXMatrix, false, rotationMat);
-    gl.uniformMatrix4fv(vYMatrix, false, rotationMat);
-    gl.uniformMatrix4fv(vZMatrix, false, rotationMat);
+function bindAxis(){
+    let vColor = gl.getAttribLocation(program, "vColor");
+    gl.vertexAttribPointer(vColor, 4,gl.FLOAT, false, 0, LINE_COL_START);
+    gl.enableVertexAttribArray(vColor);
+
+    let vPosition = gl.getAttribLocation(program, "vPosition");
+    gl.vertexAttribPointer(vPosition, 4, gl.FLOAT, false, 0, BYTES_IN_CUBE);
+    gl.enableVertexAttribArray(vPosition);
+
+    let isCube = gl.getUniformLocation(program, "isCube");
+    gl.uniform1i(isCube, 0);
 }
 
 
@@ -239,15 +299,15 @@ function updateCube(){
     let matLocation;
     if (rotateX){
         mat = rotate4x4(xAngleInDeg, "x");   
-        xAngleInDeg += .1;
+        xAngleInDeg += theta;
         matLocation = vXMatrix;
     } else if (rotateY) {
         mat = rotate4x4(yAngleInDeg, "y");
-        yAngleInDeg += .1;
+        yAngleInDeg += theta;
         matLocation = vYMatrix;
     } else if (rotateZ){
         mat = rotate4x4(zAngleInDeg, "z");
-        zAngleInDeg += .1;
+        zAngleInDeg += theta;
         matLocation = vZMatrix;
     } 
 
@@ -278,9 +338,12 @@ function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
 
-    updateCube()
+    bindCube();
+    updateCube();
     gl.drawArrays(gl.TRIANGLES, 0, 36);
 
+    bindAxis();
+    gl.drawArrays(gl.LINES, 0, 6 )
 
     
 
