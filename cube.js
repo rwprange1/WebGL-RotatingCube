@@ -1,3 +1,5 @@
+
+
 /**
  * This will be the main file for a 3D-Cube and a camera
  * @author Richard Prange
@@ -13,10 +15,9 @@ var cubeData = [];
 
 var dataBuffer;
 
-var worldToNDC;
+var camera; 
 
-
-
+const CAMERA_SPEED = .05;
 const BYTES_IN_VERTEX = 16; // 4 floats with 4 bytes each
 const BYTES_IN_COLOR = 16;
 const VERTICES_IN_CUBE = 36; // 6 sides 6 vertices
@@ -30,13 +31,9 @@ const LINE_COL_START = BYTES_IN_CUBE + VERTICES_IN_LINES * BYTES_IN_VERTEX;
 const TOTAL_BYTES = (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE + BYTES_IN_LINE; 
 
 
-
-
-
-const CAMERA_POS = new Float32Array([1.0, 1.0,0,1]);
-const LOOK_AT_POINT = new Float32Array([0.0, 0.0,0.0, 1.0]);
-const LOOK_AT_DIRECTION = new Float32Array(LOOK_AT_POINT - CAMERA_POS);
-const UP = new Float32Array([0.0, 1.0, 0.0, 0.0]);
+var cameraPos = [2.0, 2.0, 2.0 ,1.0]; 
+var lookAtPoint = [0.0, 0.0,0.0, 1.0]; 
+var up = [0.0, 1.0, 0.0, 1.0];
 
 
 var yAngleInDeg = 0;
@@ -57,6 +54,8 @@ var theta = .1;
 window.onload = function init(){
     canvas = document.getElementById("gl-canvas");
 
+    
+
     let valueHolder = this.document.getElementById("value-box");
     valueHolder.innerHTML = ("Theta: " + theta);
     let slider = this.document.getElementById("rotSpeed");
@@ -67,6 +66,51 @@ window.onload = function init(){
         valueHolder.innerHTML = ("Theta: " + theta);
     })
 
+    /**
+ * Add a simple way to interact with the cameras depth and (Z-axis) and its position (X-axis)
+ * 
+ */
+this.document.addEventListener("keydown", (event) =>{
+        switch (event.code) {
+            case "KeyW":
+                console.log("W");
+                cameraPos[2] = cameraPos[2] - CAMERA_SPEED;
+                cameraPos[0] = cameraPos[0] - CAMERA_SPEED;
+                break;
+            case "KeyA":
+                 console.log("A");
+                 cameraPos[0] = cameraPos[0] + CAMERA_SPEED;
+                 cameraPos[2] = cameraPos[2] - CAMERA_SPEED;
+                break;
+            case "KeyD":
+                console.log("D");
+                cameraPos[0] = cameraPos[0] - CAMERA_SPEED;
+                cameraPos[2] = cameraPos[2] + CAMERA_SPEED;
+                break;
+            case "KeyS":
+                cameraPos[2] = cameraPos[2] + CAMERA_SPEED;
+                cameraPos[0] = cameraPos[0] + CAMERA_SPEED;
+                break;  
+            case "KeyR":
+                cameraPos = [2.0, 2.0, 2.0 ,1.0]; 
+                lookAtPoint = [0.0, 0.0, 0.0, 1.0]; 
+                up = [0.0, 1.0, 0.0, 1.0]; 
+                break;
+            case "Space":
+                cameraPos[1] = cameraPos[1] + CAMERA_SPEED;
+                break;
+            case "ShiftLeft":
+                cameraPos[1] = cameraPos[1] - CAMERA_SPEED;
+                break; 
+            default:
+                return;       
+
+        }
+        buildCamera();
+
+    });
+
+    
 
     let xButton = document.getElementById("angleX");
     let yButton = document.getElementById("angleY");
@@ -101,6 +145,9 @@ window.onload = function init(){
     program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    gl.disable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+
     gl.viewport(0,0,canvas.width, canvas.height);
     gl.clearColor(.6,.6,.6,1.0);
 
@@ -114,22 +161,7 @@ window.onload = function init(){
     vZMatrix = gl.getUniformLocation(program, "vZMatrix");
     
     
-    let vMatrix = gl.getUniformLocation(program, "vMatrix");
-
-    let matY = rotate4x4(-.6, "y");
-    let matX = rotate4x4(.5, "x");
-
-    let mat = matMult(matX, matY);
-
-    rotationMat = new Float32Array(16);
-    for (let c = 0; c < 4; c++) { 
-        for (let r = 0; r < 4; r++) {  
-            rotationMat[c * 4 + r] = mat[r][c];
-        }
-    }
-
-     gl.uniformMatrix4fv(vMatrix, false, rotationMat);
-
+    buildCamera();
     buildCube();
     buildAxis();
 
@@ -138,19 +170,20 @@ window.onload = function init(){
 }
 
 function buildAxis(){
+    let axisLength =3;
 
     let points = [
         0.0, 0.0, 0.0, 1.0,
-        1.0, 0.0, 0.0, 1.0,
+        axisLength, 0.0, 0.0, 1.0,
 
         0.0, 0.0, 0.0, 1.0,
-        0.0, 1.0, 0.0, 1.0,
+        0.0, axisLength, 0.0, 1.0,
 
         0.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0, 1.0,
+        0.0, 0.0, axisLength, 1.0,
 
-        1.0, 0.0, 0.0 , 1.0,
-        1.0, 0.0, 0.0 , 1.0,
+        axisLength, 0.0, 0.0 , 1.0,
+        axisLength, 0.0, 0.0 , 1.0,
 
         0.0, 1.0, 0.0 , 1.0,
         0.0, 1.0, 0.0 , 1.0,
@@ -176,9 +209,9 @@ function buildCube(){
         [.5, 0.0, .5, 1.0]
     ];
 
-    let zMax = .5;
-    let xMax = .5;
-    let yMax = .5;
+    let zMax = 1;
+    let xMax = 1;
+    let yMax = 1;
 
     let cube = [
      
@@ -336,7 +369,7 @@ function render() {
     // clear the display with the background color
   
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
+   
 
     bindCube();
     updateCube();
@@ -355,4 +388,27 @@ function render() {
 		function (){requestAnimFrame(render);}, 40
     );
     
+}
+
+function buildCamera(){
+    camera = new Camera(cameraPos, lookAtPoint, up);
+    let modelMatrix = gl.getUniformLocation(program, "uModelViewMatrix");
+    let perspectiveMatrix = gl.getUniformLocation(program, "uPerspectiveMatrix");
+
+   
+
+
+    let modelMat = new Float32Array(16);
+    let perspMat = new Float32Array(16);
+    for (let c = 0; c < 4; c++) { 
+        for (let r = 0; r < 4; r++) {  
+            modelMat[c * 4 + r] = camera.modelViewMatrix[r][c];
+  
+            perspMat[c*4 + r] = camera.perspectiveMatrix[r][c];
+        }
+    }
+
+    
+    gl.uniformMatrix4fv(modelMatrix, false, modelMat);
+    gl.uniformMatrix4fv(perspectiveMatrix, false, perspMat)
 }

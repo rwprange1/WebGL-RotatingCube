@@ -14,7 +14,12 @@ attribute vec4 vColor;
 
 uniform bool isCube;
 
-uniform mat4 vMatrix;
+uniform mat4 uModelViewMatrix;
+
+uniform mat4 uPerspectiveMatrix;
+
+
+
 uniform mat4 vXMatrix;
 uniform mat4 vYMatrix;
 uniform mat4 vZMatrix;
@@ -24,11 +29,14 @@ varying vec4 fColor;
 void main() {
     gl_PointSize = 4.0;
     fColor = vColor;
-    if(isCube){
-        gl_Position = (vMatrix * vXMatrix * vYMatrix * vZMatrix) * vPosition; 
+
+    if (isCube){
+        gl_Position = ( uPerspectiveMatrix * uModelViewMatrix ) * (vXMatrix * vYMatrix * vZMatrix *vPosition); 
     }else {
-        gl_Position = vMatrix * vPosition;
+        gl_Position = uPerspectiveMatrix * uModelViewMatrix * vPosition;
     }
+    
+  
     
 }
 </script>
@@ -50,9 +58,11 @@ void main() {
 
 
 <!--Changed file path-->
+
 <script type="text/javascript" src="common_files/utils.js"></script>
 <script type="text/javascript" src="cube.js"></script>
 <script type="text/javascript" src="mat_vec.js"></script>
+<script type="text/javascript" src="Camera.js"></script>
 
 </head>   
 

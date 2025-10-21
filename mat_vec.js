@@ -192,11 +192,15 @@ function cross_product(u, v) {
 		throw "cross(): second argument is not a vector of at least 3";
 	}
 
+
+	
+
 	let result = [ 
 		u[1]*v[2] - u[2]*v[1],
 		u[2]*v[0] - u[0]*v[2],
 		u[0]*v[1] - u[1]*v[0]
 	];
+	
 	return result;
 }
 //----------------------------------------------------------------------------
@@ -211,6 +215,7 @@ function length(u) {
 // normalize a vector with or without the last component
 //----------------------------------------------------------------------------
 function normalize(u, excludeLastComponent) { 
+	
     if (excludeLastComponent) {
         var last = u.pop();
     }
