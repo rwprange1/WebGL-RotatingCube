@@ -274,6 +274,10 @@ function buildCamera(){
     }
     gl.uniformMatrix4fv(modelMatrix, false, modelMat);
     gl.uniformMatrix4fv(perspectiveMatrix, false, perspMat)
+
+    let valueHolder = this.document.getElementById("cameraPos");
+    valueHolder.innerHTML = ("Camera Position " + cameraPos);
+
 }
 
 function initRotationMatrices(){

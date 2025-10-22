@@ -31,7 +31,9 @@ void main() {
     
 
     if (isCube){
-        fColor = vec4((1.0 + vPosition.xyz)/3.0, 1.0);
+
+
+        fColor = vec4((1.0 + vPosition.xyz)/2.0, 1.0);
         gl_Position = ( uPerspectiveMatrix * uModelViewMatrix ) * (vXMatrix * vYMatrix * vZMatrix *vPosition); 
     }else {
         fColor = vColor;
@@ -86,6 +88,10 @@ Oops ... your browser doesn't support the HTML5 canvas element
     <p>Adjust Rotation Speed:</p>
     <input type="range" min=".1" max=".5" class="slider" id="rotSpeed" value=".1" step=".025"></input>
     <p id="value-box" style="color: blueviolet;"> Theta: </p>
+</div>
+
+<div id="cameraPos">
+    
 </div>
 
 </body>
