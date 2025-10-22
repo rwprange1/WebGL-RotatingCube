@@ -28,11 +28,13 @@ varying vec4 fColor;
 
 void main() {
     gl_PointSize = 4.0;
-    fColor = vColor;
+    
 
     if (isCube){
+        fColor = vec4((1.0 + vPosition.xyz)/3.0, 1.0);
         gl_Position = ( uPerspectiveMatrix * uModelViewMatrix ) * (vXMatrix * vYMatrix * vZMatrix *vPosition); 
     }else {
+        fColor = vColor;
         gl_Position = uPerspectiveMatrix * uModelViewMatrix * vPosition;
     }
     

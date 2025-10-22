@@ -68,17 +68,17 @@ Camera.prototype.worldToCam = function(){
 
 Camera.prototype.calculateU = function(){
     this.U = cross_product(normalize(this.lookAtDirection), normalize(this.up));
-    
+    this.U.push(0.0);
 }
 
 Camera.prototype.calculateV = function(){
     this.V = cross_product( normalize(this.U), normalize(this.lookAtDirection));
-    
+    this.V.push(0.0);
 }
 
 Camera.prototype.calculateN = function(){
     this.N = negate(normalize(this.lookAtDirection));
-    
+    this.N.push(0.0);
 }
 
 

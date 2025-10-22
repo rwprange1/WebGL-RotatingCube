@@ -203,6 +203,46 @@ function cross_product(u, v) {
 	
 	return result;
 }
+
+
+function vector_add(u,v) {
+	if (u.length != v.length){
+		throw `vector_add: u-length: ${u.length} does not equalu v-length: ${v.length} `
+	}
+
+	let temp = [];
+	for (let i = 0 ; i< u.length;i++){
+		temp[i] = u[i] + v[i];
+	}
+	return temp;
+}
+
+/**Subtracts v from u */
+function vector_sub(u,v) {
+	if (u.length != v.length){
+		throw `vector_sub: u-length: ${u.length} does not equalu v-length: ${v.length} `
+	}
+
+	let temp = [];
+	for (let i = 0 ; i< u.length;i++){
+		temp[i] = u[i] - v[i];
+	}
+	return temp;
+}
+
+function vector_scale(u, s){
+	let temp = []
+
+	for (let i = 0; i< u.length; i++){
+		temp[i] = u[i] * s;
+	}
+	return temp;
+}
+
+
+
+
+
 //----------------------------------------------------------------------------
 // magnitude of a vector
 //----------------------------------------------------------------------------
@@ -318,3 +358,14 @@ function rotate4x4 (theta, dim) {
 	return rot;
 }
 //----------------------------------------------------------------------------
+
+
+function matToFloat32Array(m) {
+	
+	let arr = [];
+	for (let i = 0; i < m.length ; i++){
+		arr.push(...m[i]);
+	}
+
+	return new Float32Array(arr);
+}

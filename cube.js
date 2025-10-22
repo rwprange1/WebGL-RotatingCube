@@ -14,21 +14,23 @@ var gl;
 var cubeData = [];
 
 var dataBuffer;
+var indexBuffer;
 
 var camera; 
 
-const CAMERA_SPEED = .05;
+const CAMERA_SPEED = .25;
 const BYTES_IN_VERTEX = 16; // 4 floats with 4 bytes each
 const BYTES_IN_COLOR = 16;
-const VERTICES_IN_CUBE = 36; // 6 sides 6 vertices
+const VERTICES_IN_CUBE = 8; // 6 sides 6 vertices
 const VERTICES_IN_LINES = 6;
 
-const BYTES_IN_CUBE =  (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE;
+const BYTES_IN_CUBE =  (BYTES_IN_VERTEX ) * VERTICES_IN_CUBE;
 const BYTES_IN_LINE =  (BYTES_IN_VERTEX +  BYTES_IN_COLOR) * VERTICES_IN_LINES;
 
 const LINE_COL_START = BYTES_IN_CUBE + VERTICES_IN_LINES * BYTES_IN_VERTEX;
 
-const TOTAL_BYTES = (BYTES_IN_VERTEX + BYTES_IN_COLOR) * VERTICES_IN_CUBE + BYTES_IN_LINE; 
+const TOTAL_BYTES = BYTES_IN_CUBE + BYTES_IN_LINE; 
+
 
 
 var cameraPos = [2.0, 2.0, 2.0 ,1.0]; 
@@ -53,90 +55,9 @@ var theta = .1;
 
 window.onload = function init(){
     canvas = document.getElementById("gl-canvas");
-
-    
-
-    let valueHolder = this.document.getElementById("value-box");
-    valueHolder.innerHTML = ("Theta: " + theta);
-    let slider = this.document.getElementById("rotSpeed");
-    
-    slider.addEventListener("input", ()=> {
-        //console.log(slider.value)
-        theta = Number(slider.value);
-        valueHolder.innerHTML = ("Theta: " + theta);
-    })
-
-    /**
- * Add a simple way to interact with the cameras depth and (Z-axis) and its position (X-axis)
- * 
- */
-this.document.addEventListener("keydown", (event) =>{
-        switch (event.code) {
-            case "KeyW":
-                console.log("W");
-                cameraPos[2] = cameraPos[2] - CAMERA_SPEED;
-                cameraPos[0] = cameraPos[0] - CAMERA_SPEED;
-                break;
-            case "KeyA":
-                 console.log("A");
-                 cameraPos[0] = cameraPos[0] + CAMERA_SPEED;
-                 cameraPos[2] = cameraPos[2] - CAMERA_SPEED;
-                break;
-            case "KeyD":
-                console.log("D");
-                cameraPos[0] = cameraPos[0] - CAMERA_SPEED;
-                cameraPos[2] = cameraPos[2] + CAMERA_SPEED;
-                break;
-            case "KeyS":
-                cameraPos[2] = cameraPos[2] + CAMERA_SPEED;
-                cameraPos[0] = cameraPos[0] + CAMERA_SPEED;
-                break;  
-            case "KeyR":
-                cameraPos = [2.0, 2.0, 2.0 ,1.0]; 
-                lookAtPoint = [0.0, 0.0, 0.0, 1.0]; 
-                up = [0.0, 1.0, 0.0, 1.0]; 
-                break;
-            case "Space":
-                cameraPos[1] = cameraPos[1] + CAMERA_SPEED;
-                break;
-            case "ShiftLeft":
-                cameraPos[1] = cameraPos[1] - CAMERA_SPEED;
-                break; 
-            default:
-                return;       
-
-        }
-        buildCamera();
-
-    });
-
-    
-
-    let xButton = document.getElementById("angleX");
-    let yButton = document.getElementById("angleY");
-    let zButton = document.getElementById("angleZ");
-    
-    xButton.addEventListener("click", (e)=>{
-        rotateX = !rotateX;
-        rotateY = false;
-        rotateZ = false;
-    });
-
-    yButton.addEventListener("click", (e)=>{
-        rotateY = !rotateY;
-        rotateX = false;
-        rotateZ = false;
-    });
-
-    zButton.addEventListener("click", (e)=>{
-        rotateZ = !rotateZ;
-        rotateX = false;
-        rotateY = false;
-    })
-
-
-
     gl = initWebGL(canvas);
+
+    
 
     if (!gl) {
         this.alert("WebGL isnt available");
@@ -156,16 +77,19 @@ this.document.addEventListener("keydown", (event) =>{
     gl.bindBuffer(gl.ARRAY_BUFFER, dataBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, TOTAL_BYTES, gl.STATIC_DRAW);
 
+    indexBuffer = gl.createBuffer(); 
+
     vXMatrix = gl.getUniformLocation(program, "vXMatrix");
     vYMatrix = gl.getUniformLocation(program, "vYMatrix");
     vZMatrix = gl.getUniformLocation(program, "vZMatrix");
     
-    
+    initHTMLEventListeners();
     buildCamera();
     buildCube();
+    initRotationMatrices();
     buildAxis();
 
-    bindCube();
+    
     render();
 }
 
@@ -200,105 +124,57 @@ function buildAxis(){
 function buildCube(){
     gl.bindBuffer(gl.ARRAY_BUFFER, dataBuffer);
     
-    let colors = [
-        [ 1.0, 0.0, 0.0, 1.0],
-        [0.0, 1.0, 0.0, 1.0],
-        [0.0, 0.0, 1.0, 1.0],
-        [.5, .5, 0.0, 1.0],
-        [0.0, .5, .5, 1.0],
-        [.5, 0.0, .5, 1.0]
-    ];
-
     let zMax = 1;
     let xMax = 1;
     let yMax = 1;
 
-    let cube = [
-     
-    // face 1 (x/z- axis)
-        xMax, 0.0, 0.0, 1.0,
-        xMax, yMax, 0.0, 1.0,
-        xMax, 0.0, zMax, 1.0,
-
-        xMax, 0.0, zMax, 1.0,
-        xMax, yMax, zMax, 1.0,
-        xMax, yMax, 0.0, 1.0,
-    
-    
-    // face 2 (x/y-axis)
-        xMax, 0.0, 0.0, 1.0,
-        xMax, yMax, 0.0, 1.0,
-        0.0, 0.0,0.0,1.0,
-
-        0.0, 0.0,0.0,1.0,
-        0.0, yMax,0.0,1.0,
-        xMax, yMax, 0.0, 1.0,
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(  [
+        0.0, 0.0,0.0,1.0, // 1
+        0.0, 0.0, zMax, 1.0,// 2
+        xMax, 0.0, 0.0, 1.0,// 3
+        0.0, yMax,0.0,1.0,// 4
+        0.0, yMax, zMax, 1.0, //5
+         
+        xMax, yMax, 0.0, 1.0, // 6
+        xMax, yMax, zMax, 1.0, // 7
+        xMax, 0.0, zMax, 1.0, //8 
+    ]));
 
 
-        // face 3 (y/z-axis)
-        0.0, 0.0, zMax, 1.0,
-        0.0, yMax, zMax, 1.0,
-        0.0, 0.0,0.0,1.0,
+    let indices = [
+        5 , 6 , 7,
+        7, 2 ,5 ,
+        
+        5, 3, 4,
+        4, 6, 5,
+        
+        5, 3, 0, 
+        0 , 2, 5,
 
-        0.0, 0.0,0.0,1.0,
-        0.0, yMax,0.0,1.0,
-        0.0, yMax, zMax, 1.0,
+        3 , 4, 1, 
+        1,0, 3,
 
+        6,4,1,
+        1, 7, 6,
 
-        // face 4 (z/x- axis)
-        0.0, 0.0, zMax, 1.0,
-        0.0, yMax, zMax, 1.0,
-        xMax, 0.0, zMax, 1.0,
-
-        xMax, 0.0, zMax, 1.0,
-        xMax, yMax, zMax, 1.0,
-        0.0, yMax, zMax, 1.0,
-
-        // face 5 (top)
-        xMax, yMax, 0.0, 1.0,
-        xMax, yMax, zMax, 1.0,
-        0.0, yMax, 0.0, 1.0,
-
-        0.0, yMax, 0.0, 1.0,
-        0.0, yMax, zMax, 1.0,
-        xMax, yMax, zMax, 1.0,
-
-        // face 6 (bottom)
-        xMax, 0.0, 0.0, 1.0,
-        xMax, 0.0, zMax, 1.0,
-        0.0, 0.0, 0.0, 1.0,
-
-        0.0, 0.0, 0.0, 1.0,
-        0.0, 0.0, zMax, 1.0,
-        xMax, 0.0, zMax, 1.0,
+        0, 1 ,2, 
+        2, 7 , 1
     ];
 
-    let mat = mat4();
-    rotationMat = new Float32Array(16);
-    for (let c = 0; c < 4; c++) { 
-        for (let r = 0; r < 4; r++) {  
-            rotationMat[c * 4 + r] = mat[r][c];
-        }
-    }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(
+        gl.ELEMENT_ARRAY_BUFFER,
+        new Uint16Array(indices),
+        gl.STATIC_DRAW
+    );
 
-    gl.uniformMatrix4fv(vXMatrix, false, rotationMat);
-    gl.uniformMatrix4fv(vYMatrix, false, rotationMat);
-    gl.uniformMatrix4fv(vZMatrix, false, rotationMat);
 
-    for (let i = 0; i < 6; i++){
-        for( let j = 0; j < 6; j++){
-            cube.push(...colors[i])
-        }
-    }
-   
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(cube));
 }
 
 /**
  * Aligns the pointers in the databuffer to allow us to display the cube
  */
 function bindCube(){
-
     let vColor = gl.getAttribLocation(program, "vColor");
     gl.vertexAttribPointer(vColor, 4,gl.FLOAT, false, 0, BYTES_IN_VERTEX * VERTICES_IN_CUBE);
     gl.enableVertexAttribArray(vColor);
@@ -308,7 +184,6 @@ function bindCube(){
     gl.enableVertexAttribArray(vPosition);
 
     
-
     let isCube = gl.getUniformLocation(program, "isCube");
     gl.uniform1i(isCube, 1);
 }
@@ -345,15 +220,7 @@ function updateCube(){
     } 
 
     if (matLocation){
-        rotationMat = new Float32Array(16);
-        for (let c = 0; c < 4; c++) { 
-            for (let r = 0; r < 4; r++) {  
-                rotationMat[c * 4 + r] = mat[r][c];
-            }
-        }
-
-        
-        gl.uniformMatrix4fv(matLocation, false, rotationMat);
+        gl.uniformMatrix4fv(matLocation, false, matToFloat32Array(mat));
     }
 
     
@@ -373,7 +240,8 @@ function render() {
 
     bindCube();
     updateCube();
-    gl.drawArrays(gl.TRIANGLES, 0, 36);
+    gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+    
 
     bindAxis();
     gl.drawArrays(gl.LINES, 0, 6 )
@@ -395,9 +263,6 @@ function buildCamera(){
     let modelMatrix = gl.getUniformLocation(program, "uModelViewMatrix");
     let perspectiveMatrix = gl.getUniformLocation(program, "uPerspectiveMatrix");
 
-   
-
-
     let modelMat = new Float32Array(16);
     let perspMat = new Float32Array(16);
     for (let c = 0; c < 4; c++) { 
@@ -407,8 +272,87 @@ function buildCamera(){
             perspMat[c*4 + r] = camera.perspectiveMatrix[r][c];
         }
     }
-
-    
     gl.uniformMatrix4fv(modelMatrix, false, modelMat);
     gl.uniformMatrix4fv(perspectiveMatrix, false, perspMat)
+}
+
+function initRotationMatrices(){
+    let test = matToFloat32Array(mat4());
+    gl.uniformMatrix4fv(vXMatrix, false, test);
+    gl.uniformMatrix4fv(vYMatrix, false, test);
+    gl.uniformMatrix4fv(vZMatrix, false, test); 
+}
+
+function initHTMLEventListeners(){
+    let valueHolder = this.document.getElementById("value-box");
+    valueHolder.innerHTML = ("Theta: " + theta);
+    let slider = this.document.getElementById("rotSpeed");
+    
+    slider.addEventListener("input", ()=> {
+        //console.log(slider.value)
+        theta = Number(slider.value);
+        valueHolder.innerHTML = ("Theta: " + theta);
+    })
+
+    this.document.addEventListener("keydown", (event) =>{
+            switch (event.code) {
+                case "KeyW":
+                    console.log(cameraPos);
+                    cameraPos = vector_add(cameraPos, vector_scale(camera.lookAtDirection, CAMERA_SPEED));
+                    console.log(cameraPos);
+                    break;
+                case "KeyA":
+                    
+                    cameraPos = vector_sub(cameraPos ,camera.U);
+                    
+                    break;
+                case "KeyD":
+                    cameraPos = vector_add(cameraPos ,camera.U);
+                    break;
+                case "KeyS":
+                    console.log(cameraPos);
+                    cameraPos = vector_sub(cameraPos, vector_scale(camera.lookAtDirection, CAMERA_SPEED));
+                    console.log(cameraPos);
+                    break;  
+                case "KeyR":
+                    cameraPos = [2.0, 2.0, 2.0 ,1.0]; 
+                    lookAtPoint = [0.0, 0.0, 0.0, 1.0]; 
+                    up = [0.0, 1.0, 0.0, 1.0]; 
+                    break;
+                case "Space":
+                    cameraPos = vector_add(cameraPos, camera.V);
+                    break;
+                case "ShiftLeft":
+                    cameraPos = vector_sub(cameraPos, camera.V);
+                    break; 
+                default:
+                    return;       
+
+            }
+            buildCamera();
+
+        });
+
+    
+    let xButton = document.getElementById("angleX");
+    let yButton = document.getElementById("angleY");
+    let zButton = document.getElementById("angleZ");
+    
+    xButton.addEventListener("click", (e)=>{
+        rotateX = !rotateX;
+        rotateY = false;
+        rotateZ = false;
+    });
+
+    yButton.addEventListener("click", (e)=>{
+        rotateY = !rotateY;
+        rotateX = false;
+        rotateZ = false;
+    });
+
+    zButton.addEventListener("click", (e)=>{
+        rotateZ = !rotateZ;
+        rotateX = false;
+        rotateY = false;
+    })
 }
