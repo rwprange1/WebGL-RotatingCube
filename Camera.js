@@ -9,6 +9,8 @@ function Camera(location, lookAtPoint, up){
     this.modelViewMatrix = mat4();
     this.projectionMatrix = mat4();
     this.perspectiveMatrix = mat4();
+
+
     this.cameraPos = location;
     this.lookAtPoint = lookAtPoint;
    
@@ -24,13 +26,16 @@ function Camera(location, lookAtPoint, up){
     this.lookAtDirection[3] = 0.0;
     this.up[3] = 0.0;
 
+    this.up = normalize(this.up);
+    this.lookAtDirection = normalize(this.lookAtDirection);
+
     this.calculateU();
     this.calculateV();
     this.calculateN();
 
     this.worldToCam();
     //this.ortho(-1, 1, -1, 1, .1,1 );
-    this.perspective(1, -1, 1, -1, 1,10 );
+    this.perspective(-1, 1, -1, 1, 1, 10 );
 
 }
 
@@ -41,43 +46,36 @@ function Camera(location, lookAtPoint, up){
  */
 Camera.prototype.worldToCam = function(){
     let MoveCamToOg = translate4x4(-this.cameraPos[0], -this.cameraPos[1], -this.cameraPos[2]);
-
     let rotationMat = mat4();
 
     rotationMat[0][0] = this.U[0];
-    rotationMat[1][0] = this.U[1];
-    rotationMat[2][0] = this.U[2];
+    rotationMat[0][1] = this.U[1];
+    rotationMat[0][2] = this.U[2];
 
-
-    rotationMat[0][1] = this.V[0];
+    rotationMat[1][0] = this.V[0];
     rotationMat[1][1] = this.V[1];
-    rotationMat[2][1] = this.V[2];
+    rotationMat[1][2] = this.V[2];
 
-    rotationMat[0][2] = this.N[0];
-    rotationMat[1][2] = this.N[1];
+    rotationMat[2][0] = this.N[0];
+    rotationMat[2][1] = this.N[1];
     rotationMat[2][2] = this.N[2];
 
-
-    
-    rotationMat = transpose(rotationMat)
-    
-    this.modelViewMatrix =matMult(rotationMat, MoveCamToOg); 
-    
+    this.modelViewMatrix = matMult(rotationMat, MoveCamToOg); 
 }
 
 
 Camera.prototype.calculateU = function(){
-    this.U = cross_product(normalize(this.lookAtDirection), normalize(this.up));
+    this.U = normalize(cross_product(this.lookAtDirection, this.up));
     this.U.push(0.0);
 }
 
 Camera.prototype.calculateV = function(){
-    this.V = cross_product( normalize(this.U), normalize(this.lookAtDirection));
+    this.V = cross_product(this.U, this.lookAtDirection);
     this.V.push(0.0);
 }
 
 Camera.prototype.calculateN = function(){
-    this.N = negate(normalize(this.lookAtDirection));
+    this.N = negate(this.lookAtDirection);
     this.N.push(0.0);
 }
 
@@ -102,15 +100,15 @@ Camera.prototype.ortho = function(left, right, bottom, top, near, far){
     this.projectionMatrix = mat;
 }
 
-Camera.prototype.perspective = function(right,left, top, bottom, near, far){
+Camera.prototype.perspective = function(left, right, bottom, top, near, far){
     let mat = mat4();
 
   
 
-    mat[0][0] = 2*near/(right-left);
+    mat[0][0] = near/(right-left);
     mat[0][2] = (right+left)/(right - left);
 
-    mat[1][1] = 2*near/(top-bottom);
+    mat[1][1] = near/(top-bottom);
     mat[1][2] = (top + bottom)/(top - bottom);
 
     mat[2][2] = -1 * (far + near) / (far- near);

@@ -263,15 +263,8 @@ function buildCamera(){
     let modelMatrix = gl.getUniformLocation(program, "uModelViewMatrix");
     let perspectiveMatrix = gl.getUniformLocation(program, "uPerspectiveMatrix");
 
-    let modelMat = new Float32Array(16);
-    let perspMat = new Float32Array(16);
-    for (let c = 0; c < 4; c++) { 
-        for (let r = 0; r < 4; r++) {  
-            modelMat[c * 4 + r] = camera.modelViewMatrix[r][c];
-  
-            perspMat[c*4 + r] = camera.perspectiveMatrix[r][c];
-        }
-    }
+    let modelMat = matToFloat32Array( transpose(camera.modelViewMatrix));
+    let perspMat = matToFloat32Array( transpose(camera.perspectiveMatrix));
     gl.uniformMatrix4fv(modelMatrix, false, modelMat);
     gl.uniformMatrix4fv(perspectiveMatrix, false, perspMat)
 
