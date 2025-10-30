@@ -6,9 +6,6 @@
 
 
 function Camera(location, lookAtPoint, up){
-    this.modelViewMatrix = mat4();
-    this.projectionMatrix = mat4();
-    this.perspectiveMatrix = mat4();
 
 
     this.cameraPos = location;
@@ -46,6 +43,7 @@ function Camera(location, lookAtPoint, up){
  */
 Camera.prototype.worldToCam = function(){
     let MoveCamToOg = translate4x4(-this.cameraPos[0], -this.cameraPos[1], -this.cameraPos[2]);
+    console.log(MoveCamToOg)
     let rotationMat = mat4();
 
     rotationMat[0][0] = this.U[0];
@@ -60,20 +58,32 @@ Camera.prototype.worldToCam = function(){
     rotationMat[2][1] = this.N[1];
     rotationMat[2][2] = this.N[2];
 
-    this.modelViewMatrix = matMult(rotationMat, MoveCamToOg); 
+    console.log(rotationMat)
+
+    this.viewMatrix = matMult(rotationMat, MoveCamToOg); 
+    console.log("view matrix", this.viewMatrix)
 }
 
 
+/**
+ * Camera x axis
+ */
 Camera.prototype.calculateU = function(){
     this.U = normalize(cross_product(this.lookAtDirection, this.up));
     this.U.push(0.0);
 }
 
+/**
+ * Camera y axis
+ */
 Camera.prototype.calculateV = function(){
     this.V = cross_product(this.U, this.lookAtDirection);
     this.V.push(0.0);
 }
 
+/**
+ * Camera z axis
+ */
 Camera.prototype.calculateN = function(){
     this.N = negate(this.lookAtDirection);
     this.N.push(0.0);

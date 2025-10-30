@@ -101,6 +101,7 @@ function identity4() {
 // multiplies the matrices m1 and m2
 // assumes the matrices are of  the same dimensions
 // assumes matrices are an array of arrays
+// m1 * m2
 //
 function matMult(m1, m2) {
 
